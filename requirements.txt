@@ -1,4 +1,4 @@
 requests
 bs4
-fastapi[standard]
+Flask
 lxml
