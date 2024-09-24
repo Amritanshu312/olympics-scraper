@@ -1,12 +1,16 @@
 import os
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, jsonify
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 
-# Load sensitive data from environment variables (optional)
+# Load sensitive data from environment variables
 COOKIE = os.getenv("OLYMPICS_COOKIE", "YOUR_COOKIE_HERE")
 
+# Paris 2024 Olympics Highlights URL
 URL = "https://olympics.com/en/paris-2024/videos/list/highlights"
+
+# Headers for the request
 HEADERS = {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
     "cookie": COOKIE,
@@ -16,8 +20,8 @@ HEADERS = {
     "accept-language": "en-US,en;q=0.8",
 }
 
-app = Flask(__name__)
-
+# Initialize the FastAPI app
+app = FastAPI()
 
 def fetch_highlights():
     """Fetch highlights from the Paris 2024 Olympics page."""
@@ -30,23 +34,24 @@ def fetch_highlights():
         print(f"Error fetching the page: {e}")
         return None
 
-
 def parse_highlights(html_content):
     """Parse the highlights from the page content using BeautifulSoup."""
     soup = BeautifulSoup(html_content, 'lxml')
     highlights = []
 
-    table = soup.find('section', attrs={
-        'class': 'Grid-styles__GridContainer-sc-57f17f60-0 gaYTef grid__column--8-xl min-height-container'})
+    # Locate the section that contains the videos
+    table = soup.find('section', {
+        'class': 'Grid-styles__GridContainer-sc-57f17f60-0 gaYTef grid__column--8-xl min-height-container'
+    })
 
     if table:
-        rows = table.findAll('div', attrs={
-                             'class': 'AllVideosGroup-styles__CardItemWrapper-sc-676df772-2 fwAJO all-videos-card-item'})
+        rows = table.findAll('div', {
+            'class': 'AllVideosGroup-styles__CardItemWrapper-sc-676df772-2 fwAJO all-videos-card-item'
+        })
         for row in rows:
             try:
-                title = row.find('h3', {'data-cy': 'title'}).text
-                description = row.find(
-                    'span', {'data-cy': 'with-read-more-content'}).text
+                title = row.find('h3', {'data-cy': 'title'}).get_text(strip=True)
+                description = row.find('span', {'data-cy': 'with-read-more-content'}).get_text(strip=True)
                 image_url = row.find('img')['src']
                 video_link = row.find('a', {'data-cy': 'link'})['href']
 
@@ -54,26 +59,23 @@ def parse_highlights(html_content):
                     'title': title,
                     'description': description,
                     'image_url': image_url,
-                    'video_link': video_link
+                    'video_link': f"https://olympics.com{video_link}"
                 })
-            except AttributeError:
-                continue  # Skip if any element is missing
+            except (AttributeError, KeyError, TypeError):
+                continue  # Skip if any element is missing or invalid
     return highlights
 
-
-@app.route('/api/highlights', methods=['GET'])
-def get_highlights():
+@app.get("/api/highlights")
+async def get_highlights():
     """API endpoint to fetch and return highlights."""
     html_content = fetch_highlights()
     if not html_content:
-        return jsonify({"error": "Failed to fetch highlights"}), 500
+        raise HTTPException(status_code=500, detail="Failed to fetch highlights")
 
     highlights = parse_highlights(html_content)
     if not highlights:
-        return jsonify({"message": "No highlights found"}), 404
+        raise HTTPException(status_code=404, detail="No highlights found")
 
-    return jsonify(highlights)
+    return JSONResponse(content=highlights)
 
-
-if __name__ == '__main__':
-    app.run(debug=True)
+# To run the FastAPI app, use: `uvicorn filename:app --reload`
