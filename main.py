@@ -1,11 +1,7 @@
-import os
 import requests
 from bs4 import BeautifulSoup
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
-
-# Load sensitive data from environment variables
-COOKIE = os.getenv("OLYMPICS_COOKIE", "YOUR_COOKIE_HERE")
 
 # Paris 2024 Olympics Highlights URL
 URL = "https://olympics.com/en/paris-2024/videos/list/highlights"
@@ -13,7 +9,6 @@ URL = "https://olympics.com/en/paris-2024/videos/list/highlights"
 # Headers for the request
 HEADERS = {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
-    "cookie": COOKIE,
     "referer": "https://olympics.com/en/",
     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
     "accept-encoding": "gzip, deflate, br, zstd",
@@ -22,6 +17,7 @@ HEADERS = {
 
 # Initialize the FastAPI app
 app = FastAPI()
+
 
 def fetch_highlights():
     """Fetch highlights from the Paris 2024 Olympics page."""
@@ -33,6 +29,7 @@ def fetch_highlights():
     except requests.exceptions.RequestException as e:
         print(f"Error fetching the page: {e}")
         return None
+
 
 def parse_highlights(html_content):
     """Parse the highlights from the page content using BeautifulSoup."""
@@ -50,8 +47,10 @@ def parse_highlights(html_content):
         })
         for row in rows:
             try:
-                title = row.find('h3', {'data-cy': 'title'}).get_text(strip=True)
-                description = row.find('span', {'data-cy': 'with-read-more-content'}).get_text(strip=True)
+                title = row.find(
+                    'h3', {'data-cy': 'title'}).get_text(strip=True)
+                description = row.find(
+                    'span', {'data-cy': 'with-read-more-content'}).get_text(strip=True)
                 image_url = row.find('img')['src']
                 video_link = row.find('a', {'data-cy': 'link'})['href']
 
@@ -65,12 +64,14 @@ def parse_highlights(html_content):
                 continue  # Skip if any element is missing or invalid
     return highlights
 
+
 @app.get("/api/highlights")
 async def get_highlights():
     """API endpoint to fetch and return highlights."""
     html_content = fetch_highlights()
     if not html_content:
-        raise HTTPException(status_code=500, detail="Failed to fetch highlights")
+        raise HTTPException(
+            status_code=500, detail="Failed to fetch highlights")
 
     highlights = parse_highlights(html_content)
     if not highlights:
