@@ -1,10 +1,7 @@
-import os
 import requests
 from bs4 import BeautifulSoup
 from flask import Flask, jsonify
 
-# Load sensitive data from environment variables
-COOKIE = os.getenv("OLYMPICS_COOKIE", "YOUR_COOKIE_HERE")
 
 # Paris 2024 Olympics Highlights URL
 URL = "https://olympics.com/en/paris-2024/videos/list/highlights"
@@ -12,7 +9,6 @@ URL = "https://olympics.com/en/paris-2024/videos/list/highlights"
 # Headers for the request
 HEADERS = {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
-    "cookie": COOKIE,
     "referer": "https://olympics.com/en/",
     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
     "accept-encoding": "gzip, deflate, br, zstd",
