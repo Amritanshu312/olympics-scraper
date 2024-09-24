@@ -33,7 +33,7 @@ def fetch_highlights():
 
 def parse_highlights(html_content):
     """Parse the highlights from the page content using BeautifulSoup."""
-    soup = BeautifulSoup(html_content, 'html5lib')
+    soup = BeautifulSoup(html_content, 'lxml')
     highlights = []
 
     table = soup.find('section', attrs={
